@@ -3,7 +3,7 @@ require('dotenv').config()
 const express = require("express");
 const bodyParser = require("body-Parser");
 const ejs = require("ejs");
-const encrypt = require("mongoose-encryption")
+const md5 = require("md5")
 const mongoose = require("mongoose")
 const app = express();
 mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true, useUnifiedTopology: true });
@@ -19,9 +19,7 @@ const userSchema = new mongoose.Schema({
     password: String
 })
 
-// userSchema.plugin(encrypt,({ secret: encryptionKey, encryptedFeilds: ["password"] }))
 const encryptionKey = process.env.SECRET
-userSchema.plugin(encrypt, { secret: encryptionKey, encryptedFeilds: ['password'], excludeFromEncryption: ["email"] });
 const userModel = new mongoose.model("user", userSchema)
 app.get("/", (req, res) => {
     res.render("home.ejs")
@@ -38,7 +36,7 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
     const user = new userModel({
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     })
     user.save((err) => {
         if (err) {
@@ -49,7 +47,7 @@ app.post("/register", (req, res) => {
 
 app.post("/login", (req, res) => {
     const username = req.body.username;
-    const password = req.body.password;
+    const password = md5(req.body.password);
     userModel.find({ email: username }, (err, foundUser) => {
         if (err) {
             console.log(err);
